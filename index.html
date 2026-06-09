@@ -2,485 +2,645 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 <title>Number Guessing Duel ⚔️</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;800&display=swap" rel="stylesheet"/>
 <style>
-  :root{--p1:#6366f1;--p2:#10b981;}
-  *,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  html,body{height:100%;width:100%;margin:0;padding:0;overflow:hidden;
-    font-family:'Nunito',sans-serif;background:#0f0f1a;color:#f1f5f9;}
-  body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
-    background:radial-gradient(ellipse 60% 45% at 15% 15%,rgba(99,102,241,.18) 0%,transparent 70%),
-               radial-gradient(ellipse 55% 45% at 85% 85%,rgba(16,185,129,.15) 0%,transparent 70%);}
-  h1,.ff{font-family:'Fredoka One',cursive;}
+/* ─── Reset & base ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #0f0f1a; color: #f1f5f9; font-family: 'Nunito', sans-serif; }
 
-  /* screens */
-  .screen{position:fixed;inset:0;z-index:1;display:flex;flex-direction:column;
-    align-items:center;justify-content:center;overflow:hidden;}
-  .screen.hidden,.hidden{display:none!important;}
+/* ─── Screen system ─────────────────────────────────────────── */
+/* Every screen is position:fixed, full viewport, hidden by default */
+.scr {
+  position: fixed; inset: 0;
+  display: none;              /* JS sets display:flex to show */
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  z-index: 10;
+}
+/* bg glow shared by all screens */
+.scr::before {
+  content: '';
+  position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(ellipse 70% 50% at 10% 10%, rgba(99,102,241,.22) 0%, transparent 65%),
+    radial-gradient(ellipse 60% 50% at 90% 90%, rgba(16,185,129,.18) 0%, transparent 65%);
+}
+.scr > * { position: relative; z-index: 1; }
 
-  /* glass / cards */
-  .glass{background:rgba(255,255,255,.06);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.11);}
-  .p1c{background:linear-gradient(135deg,rgba(99,102,241,.25),rgba(67,56,202,.15));border:1px solid rgba(165,180,252,.3);}
-  .p2c{background:linear-gradient(135deg,rgba(16,185,129,.25),rgba(5,150,105,.15));border:1px solid rgba(110,231,183,.3);}
+/* ─── Typography ─────────────────────────────────────────────── */
+.ff { font-family: 'Fredoka One', cursive; }
 
-  /* buttons */
-  .btn{font-family:'Fredoka One',cursive;letter-spacing:.04em;cursor:pointer;border:none;
-    outline:none;transition:all .15s;user-select:none;-webkit-user-select:none;}
-  .btn:active{transform:scale(.94);}
-  .b1{background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;box-shadow:0 3px 14px rgba(99,102,241,.45);}
-  .b2{background:linear-gradient(135deg,#10b981,#059669);color:#fff;box-shadow:0 3px 14px rgba(16,185,129,.45);}
-  .bg{background:rgba(255,255,255,.08);color:#cbd5e1;border:1px solid rgba(255,255,255,.15);}
-  .bgo{background:linear-gradient(135deg,#f59e0b,#d97706);color:#1a1a1a;box-shadow:0 3px 14px rgba(245,158,11,.45);}
+/* ─── Utility cards ──────────────────────────────────────────── */
+.card {
+  background: rgba(255,255,255,.07);
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 18px;
+}
+.card-p1 { background: rgba(99,102,241,.18); border-color: rgba(165,180,252,.3); }
+.card-p2 { background: rgba(16,185,129,.18); border-color: rgba(110,231,183,.3); }
 
-  /* number display */
-  .ndisp{font-family:'Fredoka One',cursive;font-size:2.4rem;background:rgba(0,0,0,.3);
-    border-radius:12px;border:2px solid rgba(255,255,255,.15);
-    height:54px;display:flex;align-items:center;justify-content:center;
-    width:100%;transition:border-color .3s;}
-  .ndisp.d1{border-color:rgba(165,180,252,.7);}
-  .ndisp.d2{border-color:rgba(110,231,183,.7);}
+/* ─── Buttons ────────────────────────────────────────────────── */
+.btn {
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.1rem; letter-spacing: .04em;
+  border: none; outline: none; cursor: pointer;
+  border-radius: 14px; padding: 12px 24px;
+  transition: transform .12s, opacity .12s;
+  user-select: none; -webkit-user-select: none;
+  display: block; width: 100%; text-align: center;
+}
+.btn:active { transform: scale(.94); opacity: .85; }
+.btn-p1  { background: linear-gradient(135deg,#6366f1,#4f46e5); color: #fff; box-shadow: 0 4px 18px rgba(99,102,241,.4); }
+.btn-p2  { background: linear-gradient(135deg,#10b981,#059669); color: #fff; box-shadow: 0 4px 18px rgba(16,185,129,.4); }
+.btn-gold{ background: linear-gradient(135deg,#f59e0b,#d97706); color: #111; box-shadow: 0 4px 18px rgba(245,158,11,.4); }
+.btn-dim { background: rgba(255,255,255,.1); color: #94a3b8; border: 1px solid rgba(255,255,255,.15); }
 
-  /* numpad — FIXED pixel size keys, no aspect-ratio */
-  .numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
-  .nk{height:44px;border-radius:10px;font-size:1.2rem;font-weight:800;
-    background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.13);
-    color:#e2e8f0;cursor:pointer;display:flex;align-items:center;justify-content:center;
-    transition:all .1s;user-select:none;-webkit-user-select:none;}
-  .nk:active{transform:scale(.88);background:rgba(255,255,255,.24);}
-  .nk.zero{grid-column:2;}
+/* ─── Number display ─────────────────────────────────────────── */
+.ndisp {
+  font-family: 'Fredoka One', cursive;
+  font-size: 2.8rem; height: 58px;
+  background: rgba(0,0,0,.35); border-radius: 14px;
+  border: 2px solid rgba(255,255,255,.18);
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; transition: border-color .25s;
+}
+.ndisp-p1 { border-color: rgba(165,180,252,.7); }
+.ndisp-p2 { border-color: rgba(110,231,183,.7); }
 
-  /* feedback */
-  .fbadge{font-family:'Fredoka One',cursive;padding:4px 14px;border-radius:50px;
-    font-size:.88rem;display:inline-flex;align-items:center;gap:4px;}
-  .fhi{background:rgba(239,68,68,.2);border:1px solid rgba(239,68,68,.55);color:#fca5a5;}
-  .flo{background:rgba(59,130,246,.2);border:1px solid rgba(59,130,246,.55);color:#93c5fd;}
-  .fok{background:rgba(245,158,11,.22);border:1px solid rgba(245,158,11,.65);color:#fcd34d;}
+/* ─── Numpad ─────────────────────────────────────────────────── */
+.numpad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  width: 100%;
+}
+.nk {
+  height: 48px; border-radius: 12px;
+  font-size: 1.3rem; font-weight: 800;
+  background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15);
+  color: #e2e8f0; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform .1s, background .1s;
+  user-select: none; -webkit-user-select: none;
+}
+.nk:active { transform: scale(.88); background: rgba(255,255,255,.25); }
+.nk-zero   { grid-column: 2; }
+.nk-ok     { background: rgba(245,158,11,.22); border-color: rgba(245,158,11,.5); color: #fcd34d; }
+.nk-del    { font-size: 1rem; }
 
-  /* guess chips */
-  .chip{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;
-    min-width:44px;padding:4px 8px;border-radius:10px;flex-shrink:0;
-    font-family:'Fredoka One',cursive;box-shadow:0 2px 6px rgba(0,0,0,.45);}
-  .chip .cn{font-size:1.1rem;line-height:1;}
-  .chip .cl{font-size:.58rem;font-weight:900;letter-spacing:.05em;margin-top:1px;opacity:.9;}
-  .chi{background:#7f1d1d;border:2px solid #f87171;color:#fecaca;}
-  .clo{background:#1e3a5f;border:2px solid #60a5fa;color:#bfdbfe;}
-  .cok{background:#78350f;border:2px solid #fbbf24;color:#fde68a;}
+/* ─── Feedback badge ─────────────────────────────────────────── */
+.fbd {
+  font-family: 'Fredoka One', cursive;
+  font-size: .9rem; padding: 5px 14px;
+  border-radius: 50px; display: inline-flex; align-items: center; gap: 5px;
+}
+.fbd-hi  { background: rgba(239,68,68,.2);  border: 1px solid rgba(239,68,68,.55);  color: #fca5a5; }
+.fbd-lo  { background: rgba(59,130,246,.2); border: 1px solid rgba(59,130,246,.5);  color: #93c5fd; }
+.fbd-win { background: rgba(245,158,11,.22);border: 1px solid rgba(245,158,11,.6);  color: #fcd34d; }
 
-  /* history strip */
-  .hstrip{display:flex;gap:5px;overflow-x:auto;padding:2px 0 4px;align-items:center;
-    scrollbar-width:none;-ms-overflow-style:none;}
-  .hstrip::-webkit-scrollbar{display:none;}
+/* ─── Guess chips ────────────────────────────────────────────── */
+.chip {
+  display: inline-flex; flex-direction: column; align-items: center;
+  min-width: 42px; padding: 4px 8px; border-radius: 10px; flex-shrink: 0;
+  font-family: 'Fredoka One', cursive; box-shadow: 0 2px 6px rgba(0,0,0,.4);
+}
+.chip-num { font-size: 1.1rem; line-height: 1; }
+.chip-lbl { font-size: .58rem; font-weight: 900; letter-spacing: .05em; margin-top: 1px; opacity: .9; }
+.chip-hi  { background: #7f1d1d; border: 2px solid #f87171; color: #fecaca; }
+.chip-lo  { background: #1e3a5f; border: 2px solid #60a5fa; color: #bfdbfe; }
+.chip-ok  { background: #78350f; border: 2px solid #fbbf24; color: #fde68a; }
 
-  /* score rings */
-  .sring{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;
-    justify-content:center;font-family:'Fredoka One',cursive;font-size:1.1rem;}
+/* history row strip (scrolls horizontally) */
+.hrow {
+  display: flex; align-items: center; gap: 6px;
+  padding: 2px 0;
+}
+.hrow-strip {
+  display: flex; gap: 5px; overflow-x: auto;
+  scrollbar-width: none; -ms-overflow-style: none;
+  padding-bottom: 2px; flex: 1; align-items: center;
+}
+.hrow-strip::-webkit-scrollbar { display: none; }
+.hrow-label {
+  font-family: 'Fredoka One', cursive; font-size: .62rem;
+  padding: 2px 7px; border-radius: 20px; white-space: nowrap; flex-shrink: 0;
+}
+.hl-p1 { background: rgba(99,102,241,.35); border: 1px solid rgba(165,180,252,.45); color: #a5b4fc; }
+.hl-p2 { background: rgba(16,185,129,.3);  border: 1px solid rgba(110,231,183,.4);  color: #6ee7b7; }
 
-  /* sidebar */
-  #sidebar{transition:transform .32s cubic-bezier(.4,0,.2,1);}
-  #sidebar.open{transform:translateX(0)!important;}
-  @media(min-width:768px){
-    #sidebar{transform:none!important;position:relative!important;width:200px;flex-shrink:0;}
-    #sbt,#sbbk{display:none!important;}
-  }
-  .hi{font-size:.78rem;padding:4px 8px;border-radius:7px;background:rgba(255,255,255,.07);
-    border:1px solid rgba(255,255,255,.1);margin-bottom:3px;
-    display:flex;justify-content:space-between;align-items:center;}
+/* ─── Animations ─────────────────────────────────────────────── */
+@keyframes pop   { 0%{transform:scale(.8);opacity:0} 65%{transform:scale(1.07)} 100%{transform:scale(1);opacity:1} }
+@keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-8px)} 40%,80%{transform:translateX(8px)} }
+@keyframes floatY{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+@keyframes celeb { 0%{transform:scale(1)} 30%{transform:scale(1.15) rotate(-3deg)} 60%{transform:scale(1.1) rotate(2deg)} 100%{transform:scale(1)} }
+.anim-pop   { animation: pop   .32s ease forwards; }
+.anim-shake { animation: shake .38s ease; }
+.anim-float { animation: floatY 3s ease-in-out infinite; }
+.anim-celeb { animation: celeb .65s ease; }
 
-  /* animations */
-  @keyframes pop{0%{transform:scale(.8);opacity:0}60%{transform:scale(1.07)}100%{transform:scale(1);opacity:1}}
-  @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
-  @keyframes fadeSlide{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-  @keyframes celebrate{0%{transform:scale(1)}25%{transform:scale(1.14) rotate(-2deg)}50%{transform:scale(1.08) rotate(2deg)}100%{transform:scale(1)}}
-  @keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
-  .ap{animation:pop .3s ease forwards;}
-  .as{animation:shake .38s ease;}
-  .af{animation:fadeSlide .35s ease forwards;}
-  .ac{animation:celebrate .6s ease;}
-  .aft{animation:floatY 3s ease-in-out infinite;}
+/* ─── Privacy cover ──────────────────────────────────────────── */
+#scr-priv {
+  background: #080812;
+  gap: 20px;
+}
 
-  /* privacy */
-  .priv{position:fixed;inset:0;z-index:100;background:#0a0a14;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
+/* ═══════════════════════════════════════════════════════════
+   GAME SCREEN — split layout: game area + history bar at bottom
+   ═══════════════════════════════════════════════════════════ */
+#scr-game {
+  justify-content: flex-start;
+  padding: 0;
+}
+
+/* top strip: turn indicator */
+#game-topbar {
+  width: 100%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  padding: 10px 14px 6px; gap: 8px;
+}
+
+/* info card */
+#game-infocard {
+  width: 100%; flex-shrink: 0;
+  padding: 0 12px 6px;
+}
+#game-infocard-inner {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(255,255,255,.07);
+  border: 1px solid rgba(255,255,255,.13);
+  border-radius: 14px; padding: 9px 12px;
+}
+
+/* number display */
+#game-ndisp-wrap { width: 100%; flex-shrink: 0; padding: 0 12px 6px; }
+
+/* numpad */
+#game-numpad-wrap { width: 100%; flex-shrink: 0; padding: 0 12px 6px; }
+
+/* guess button */
+#game-btn-wrap { width: 100%; flex-shrink: 0; padding: 0 12px 6px; }
+
+/* HISTORY PANEL — takes all remaining height, never cut off */
+#game-hist-wrap {
+  width: 100%;
+  flex: 1;          /* ← grows to fill remaining space */
+  min-height: 0;    /* ← critical: allows shrinking in flex */
+  padding: 0 12px 12px;
+  display: flex; flex-direction: column;
+}
+#game-hist-inner {
+  flex: 1; min-height: 0;
+  background: rgba(0,0,0,.38);
+  border: 1.5px solid rgba(255,255,255,.18);
+  border-radius: 14px;
+  padding: 8px 11px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+#game-hist-inner .ff {
+  font-size: .8rem; color: #e2e8f0; flex-shrink: 0;
+}
+
+/* Score ring */
+.sring {
+  width: 40px; height: 40px; border-radius: 50%;
+  font-family: 'Fredoka One', cursive; font-size: 1.2rem;
+  display: flex; align-items: center; justify-content: center;
+}
 </style>
 </head>
 <body>
 
-<!-- ══ WELCOME ══ -->
-<div id="screen-welcome" class="screen">
-  <div class="text-center mb-4 af">
-    <div class="text-5xl mb-2 aft" style="display:inline-block">⚔️</div>
-    <h1 class="ff text-5xl text-white mb-1" style="text-shadow:0 0 36px rgba(99,102,241,.7)">Number Duel</h1>
-    <p class="text-slate-400 font-semibold">Pass & Play · 2 Players · 1 Device</p>
+<!-- ═══════════════════ WELCOME ═══════════════════ -->
+<div id="scr-welcome" class="scr" style="gap:16px; background:#0f0f1a;">
+  <div style="text-align:center;">
+    <div class="ff anim-float" style="font-size:3.5rem; display:inline-block; margin-bottom:8px;">⚔️</div>
+    <h1 class="ff" style="font-size:2.8rem; color:#fff; text-shadow:0 0 30px rgba(99,102,241,.7); line-height:1.1;">Number Duel</h1>
+    <p style="color:#94a3b8; font-size:.9rem; margin-top:4px;">Pass & Play · 2 Players · 1 Device</p>
   </div>
-  <div class="glass rounded-2xl p-4 af" style="width:calc(100% - 2rem);max-width:340px;animation-delay:.1s">
-    <p class="text-slate-300 text-sm text-center leading-relaxed mb-3">Each player picks a secret number <span class="text-amber-400 font-bold">1–100</span>. Take turns guessing. Fewest guesses wins!</p>
-    <div class="flex gap-3 text-xs text-center">
-      <div class="flex-1 p1c rounded-xl p-3"><div class="text-xl mb-1">🔵</div><div class="font-bold text-indigo-300">Player 1</div></div>
-      <div class="flex-1 p2c rounded-xl p-3"><div class="text-xl mb-1">🟢</div><div class="font-bold text-emerald-300">Player 2</div></div>
+  <div class="card" style="width:calc(100% - 32px); max-width:340px; padding:16px;">
+    <p style="color:#cbd5e1; font-size:.85rem; text-align:center; line-height:1.55; margin-bottom:12px;">
+      Each player picks a <strong style="color:#fbbf24;">secret number 1–100</strong>.<br>
+      Take turns guessing. Fewest guesses wins!
+    </p>
+    <div style="display:flex; gap:10px;">
+      <div class="card card-p1" style="flex:1; padding:10px 6px; text-align:center; border-radius:12px;">
+        <div style="font-size:1.4rem;">🔵</div>
+        <div class="ff" style="color:#a5b4fc; font-size:.85rem; margin-top:4px;">Player 1</div>
+      </div>
+      <div class="card card-p2" style="flex:1; padding:10px 6px; text-align:center; border-radius:12px;">
+        <div style="font-size:1.4rem;">🟢</div>
+        <div class="ff" style="color:#6ee7b7; font-size:.85rem; margin-top:4px;">Player 2</div>
+      </div>
     </div>
   </div>
-  <button class="btn bgo rounded-2xl text-xl mt-4 af" style="width:calc(100% - 2rem);max-width:340px;padding:.7rem 2rem;animation-delay:.18s" onclick="startSetup()">⚡ Start Game</button>
-</div>
-
-<!-- ══ SETUP ══ -->
-<div id="screen-setup" class="screen hidden">
-  <div class="text-center mb-3">
-    <div id="se-emoji" class="text-4xl mb-1">🔵</div>
-    <h2 class="ff text-2xl text-white" id="se-name">Player 1</h2>
-    <p class="text-slate-400 text-xs mt-0.5">Enter your secret number (1–100)</p>
-  </div>
-  <div style="width:100%;max-width:300px;padding:0 1.25rem">
-    <div id="se-disp" class="ndisp d1 mb-3"><span id="se-val">_</span></div>
-    <div class="numpad mb-3" id="se-pad"></div>
-    <div id="se-err" class="text-red-400 text-center text-xs mb-2 hidden font-bold"></div>
-    <button id="se-btn" class="btn b1 rounded-2xl w-full" style="padding:.65rem;font-size:1.1rem" onclick="confirmSecret()">🔒 Lock it in!</button>
+  <div style="width:calc(100% - 32px); max-width:340px;">
+    <button class="btn btn-gold" onclick="startGame()">⚡ Start Game</button>
   </div>
 </div>
 
-<!-- ══ PRIVACY ══ -->
-<div id="screen-privacy" class="priv hidden">
-  <div class="text-5xl aft" id="pv-emoji" style="display:inline-block">🔵</div>
-  <div class="text-center px-8">
-    <h2 class="ff text-3xl text-white mb-1" id="pv-title">Pass to Player 2</h2>
-    <p class="text-slate-400 text-sm" id="pv-sub">Hand the device to Player 2</p>
+<!-- ═══════════════════ SETUP ═══════════════════ -->
+<div id="scr-setup" class="scr" style="gap:14px; background:#0f0f1a;">
+  <div style="text-align:center;">
+    <div id="su-emoji" style="font-size:2.8rem; margin-bottom:4px;">🔵</div>
+    <h2 class="ff" id="su-name" style="font-size:1.8rem; color:#fff;">Player 1</h2>
+    <p style="color:#64748b; font-size:.8rem; margin-top:2px;">Enter your secret number (1–100)</p>
   </div>
-  <button class="btn b2 rounded-2xl px-10 py-3 text-xl" id="pv-btn">I'm Ready! ✊</button>
+  <div style="width:calc(100% - 32px); max-width:300px; display:flex; flex-direction:column; gap:10px;">
+    <div id="su-disp" class="ndisp ndisp-p1"><span id="su-val">_</span></div>
+    <div class="numpad" id="su-pad"></div>
+    <div id="su-err" style="display:none; color:#f87171; font-size:.8rem; text-align:center; font-weight:700;">⚠️ Enter a number between 1 and 100</div>
+    <button id="su-btn" class="btn btn-p1" onclick="confirmSecret()">🔒 Lock it in!</button>
+  </div>
 </div>
 
-<!-- ══ GAME ══ -->
-<div id="screen-game" class="hidden" style="position:fixed;inset:0;z-index:1;display:none;flex-direction:row;">
-  <div id="sbbk" class="fixed inset-0 bg-black/60 z-30 hidden" onclick="closeSb()"></div>
-
-  <!-- sidebar -->
-  <aside id="sidebar" class="fixed top-0 left-0 h-full glass border-r border-white/10 z-40 flex flex-col p-3 gap-2 overflow-hidden md:static" style="width:200px;transform:translateX(-100%)">
-    <div class="flex items-center justify-between flex-shrink-0">
-      <h3 class="ff text-base text-white">📊 Score</h3>
-      <button class="btn bg rounded-lg px-2 py-0.5 text-xs md:hidden" onclick="closeSb()">✕</button>
-    </div>
-    <div class="flex gap-2 flex-shrink-0">
-      <div class="flex-1 p1c rounded-xl p-2 text-center">
-        <div class="sring mx-auto mb-0.5" style="background:rgba(99,102,241,.35);border:2px solid rgba(165,180,252,.5)"><span id="sc1" class="text-indigo-200">0</span></div>
-        <div class="font-bold text-indigo-300 text-xs">P1 Wins</div>
-      </div>
-      <div class="flex-1 p2c rounded-xl p-2 text-center">
-        <div class="sring mx-auto mb-0.5" style="background:rgba(16,185,129,.35);border:2px solid rgba(110,231,183,.5)"><span id="sc2" class="text-emerald-200">0</span></div>
-        <div class="font-bold text-emerald-300 text-xs">P2 Wins</div>
-      </div>
-    </div>
-    <div class="glass rounded-xl p-2 text-xs flex-shrink-0">
-      <div class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">This Round</div>
-      <div class="flex justify-between text-slate-300 mb-0.5"><span>P1:</span><span id="sg1" class="font-bold text-indigo-300">0 guesses</span></div>
-      <div class="flex justify-between text-slate-300"><span>P2:</span><span id="sg2" class="font-bold text-emerald-300">0 guesses</span></div>
-    </div>
-    <div class="flex-1 overflow-hidden flex flex-col min-h-0">
-      <div class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1 flex-shrink-0">Round History</div>
-      <div id="hl" class="overflow-y-auto flex-1"></div>
-      <div id="he" class="text-slate-600 text-xs text-center py-2">No rounds yet</div>
-    </div>
-    <button class="btn bg rounded-xl py-1.5 text-xs flex-shrink-0" onclick="confirmNewGame()">🔄 New Game</button>
-  </aside>
-
-  <!-- main -->
-  <main style="flex:1;min-width:0;display:flex;flex-direction:column;height:100%;overflow:hidden;">
-
-    <!-- top bar: who's guessing -->
-    <div style="flex-shrink:0;display:flex;align-items:center;padding:8px 10px 4px;">
-      <button id="sbt" class="btn bg rounded-xl md:hidden" style="padding:5px 9px;font-size:.95rem;" onclick="openSb()">☰</button>
-      <div style="display:flex;align-items:center;gap:7px;margin:0 auto;">
-        <div id="tdot" style="width:9px;height:9px;border-radius:50%;background:#818cf8;box-shadow:0 0 8px rgba(99,102,241,.8);flex-shrink:0;"></div>
-        <span id="tlbl" class="ff text-white" style="font-size:1rem;">Player 1's Turn</span>
-      </div>
-      <div style="width:32px;" class="md:hidden"></div>
-    </div>
-
-    <!-- info row: emoji + target + attempt + feedback all in one line -->
-    <div style="flex-shrink:0;padding:0 10px 4px;">
-      <div class="glass rounded-xl" style="padding:8px 10px;display:flex;align-items:center;gap:8px;">
-        <span id="ge" style="font-size:1.4rem;flex-shrink:0;">🔵</span>
-        <div style="flex:1;min-width:0;">
-          <p style="margin:0;font-size:.78rem;color:#94a3b8;">Guess <span id="gt" style="color:#fff;font-weight:700;">Player 2</span>'s number</p>
-          <p style="margin:0;font-size:.7rem;color:#64748b;">Attempt <span id="gatt" style="color:#fbbf24;font-weight:700;">1</span></p>
-        </div>
-        <div id="gfb" style="flex-shrink:0;"></div>
-      </div>
-    </div>
-
-    <!-- number display -->
-    <div style="flex-shrink:0;padding:0 10px 4px;">
-      <div id="gdisp" class="ndisp d1"><span id="gval">_</span></div>
-    </div>
-
-    <!-- numpad: fixed 44px tall rows -->
-    <div style="flex-shrink:0;padding:0 10px 4px;">
-      <div class="numpad" id="gpad"></div>
-    </div>
-
-    <!-- guess button -->
-    <div style="flex-shrink:0;padding:0 10px 4px;">
-      <button id="gbtn" class="btn b1 rounded-xl w-full" style="padding:9px;font-size:1.05rem;" onclick="submitGuess()">🎯 Guess!</button>
-    </div>
-
-    <!-- HISTORY — flex:1 so it always claims remaining space and is always visible -->
-    <div style="flex:1;min-height:0;padding:0 10px 10px;display:flex;flex-direction:column;">
-      <div style="flex:1;min-height:0;border-radius:12px;background:rgba(0,0,0,.4);border:1.5px solid rgba(255,255,255,.18);padding:7px 10px;display:flex;flex-direction:column;gap:5px;">
-        <div class="ff" style="font-size:.8rem;color:#e2e8f0;flex-shrink:0;">📋 Guess History</div>
-        <!-- P1 strip -->
-        <div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">
-          <span style="font-family:'Fredoka One',cursive;font-size:.62rem;padding:2px 7px;border-radius:20px;background:rgba(99,102,241,.35);border:1px solid rgba(165,180,252,.45);color:#a5b4fc;white-space:nowrap;flex-shrink:0;">🔵 P1</span>
-          <div class="hstrip" id="hp1" style="flex:1;"><span style="color:#475569;font-size:.72rem;">—</span></div>
-        </div>
-        <!-- P2 strip -->
-        <div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">
-          <span style="font-family:'Fredoka One',cursive;font-size:.62rem;padding:2px 7px;border-radius:20px;background:rgba(16,185,129,.3);border:1px solid rgba(110,231,183,.4);color:#6ee7b7;white-space:nowrap;flex-shrink:0;">🟢 P2</span>
-          <div class="hstrip" id="hp2" style="flex:1;"><span style="color:#475569;font-size:.72rem;">—</span></div>
-        </div>
-      </div>
-    </div>
-
-  </main>
+<!-- ═══════════════════ PRIVACY ═══════════════════ -->
+<div id="scr-priv" class="scr" style="gap:20px;">
+  <div id="pv-emoji" class="ff anim-float" style="font-size:4rem; display:inline-block;">🟢</div>
+  <div style="text-align:center; padding:0 32px;">
+    <h2 class="ff" id="pv-title" style="font-size:2rem; color:#fff; margin-bottom:6px;">Pass to Player 2</h2>
+    <p id="pv-sub" style="color:#94a3b8; font-size:.9rem; line-height:1.5;">Hand the device to Player 2</p>
+  </div>
+  <div style="width:calc(100% - 32px); max-width:300px;">
+    <button id="pv-btn" class="btn btn-p2">I'm Ready! ✊</button>
+  </div>
 </div>
 
-<!-- ══ ROUND WIN ══ -->
-<div id="screen-roundwin" class="screen hidden">
-  <div class="text-center af" style="padding:0 1.5rem;width:100%;max-width:360px">
-    <div id="rw-trophy" class="text-6xl mb-3">🏆</div>
-    <h2 class="ff text-4xl text-white mb-1" id="rw-title">Player 1 Wins!</h2>
-    <p class="text-slate-400 text-sm mb-1" id="rw-guesses"></p>
-    <p class="text-slate-500 text-xs mb-4" id="rw-secret"></p>
-    <div class="flex gap-3 mb-4 justify-center">
-      <div class="glass rounded-2xl px-5 py-2 text-center"><div class="ff text-3xl text-indigo-300" id="rws1">0</div><div class="text-xs text-slate-400">P1 Wins</div></div>
-      <div class="glass rounded-2xl px-5 py-2 text-center"><div class="ff text-3xl text-emerald-300" id="rws2">0</div><div class="text-xs text-slate-400">P2 Wins</div></div>
+<!-- ═══════════════════ GAME ═══════════════════ -->
+<div id="scr-game" class="scr">
+
+  <!-- turn indicator -->
+  <div id="game-topbar">
+    <div id="g-dot" style="width:9px;height:9px;border-radius:50%;background:#818cf8;box-shadow:0 0 8px rgba(99,102,241,.9);flex-shrink:0;"></div>
+    <span id="g-lbl" class="ff" style="font-size:1rem; color:#fff;">Player 1's Turn</span>
+    <button class="btn btn-dim ff" onclick="showScores()" style="width:auto; padding:4px 10px; font-size:.75rem; margin-left:auto; border-radius:8px;">📊 Scores</button>
+  </div>
+
+  <!-- info: who guesses who + feedback -->
+  <div id="game-infocard">
+    <div id="game-infocard-inner">
+      <span id="g-emoji" style="font-size:1.4rem; flex-shrink:0;">🔵</span>
+      <div style="flex:1; min-width:0;">
+        <p style="font-size:.78rem; color:#94a3b8;">Guess <strong id="g-target" style="color:#fff;">Player 2</strong>'s number</p>
+        <p style="font-size:.7rem; color:#475569; margin-top:1px;">Attempt <span id="g-att" style="color:#fbbf24; font-weight:700;">1</span></p>
+      </div>
+      <div id="g-fb"></div>
     </div>
-    <button class="btn bgo rounded-2xl w-full mb-2" style="padding:.7rem;font-size:1.15rem;" onclick="nextRound()">⚔️ Next Round!</button>
-    <button class="btn bg rounded-2xl w-full" style="padding:.6rem;font-size:.95rem;" onclick="confirmNewGame()">🏠 New Game</button>
+  </div>
+
+  <!-- number display -->
+  <div id="game-ndisp-wrap">
+    <div id="g-disp" class="ndisp ndisp-p1"><span id="g-val">_</span></div>
+  </div>
+
+  <!-- numpad -->
+  <div id="game-numpad-wrap">
+    <div class="numpad" id="g-pad"></div>
+  </div>
+
+  <!-- guess button -->
+  <div id="game-btn-wrap">
+    <button id="g-btn" class="btn btn-p1" onclick="submitGuess()">🎯 Guess!</button>
+  </div>
+
+  <!-- history — fills remaining space -->
+  <div id="game-hist-wrap">
+    <div id="game-hist-inner">
+      <div class="ff" style="letter-spacing:.02em; color:#e2e8f0;">📋 Guess History</div>
+      <div class="hrow">
+        <span class="hrow-label hl-p1">🔵 P1</span>
+        <div class="hrow-strip" id="h-p1"><span style="color:#475569;font-size:.72rem;">—</span></div>
+      </div>
+      <div class="hrow">
+        <span class="hrow-label hl-p2">🟢 P2</span>
+        <div class="hrow-strip" id="h-p2"><span style="color:#475569;font-size:.72rem;">—</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════ SCORES OVERLAY ═══════════════════ -->
+<div id="scr-scores" class="scr" style="background:rgba(8,8,18,.92); backdrop-filter:blur(16px); gap:14px; z-index:50;">
+  <h2 class="ff" style="font-size:1.8rem; color:#fff;">📊 Scoreboard</h2>
+  <div style="display:flex; gap:12px; width:calc(100% - 32px); max-width:320px;">
+    <div class="card card-p1" style="flex:1; padding:12px; text-align:center; border-radius:14px;">
+      <div class="sring" style="margin:0 auto 6px; background:rgba(99,102,241,.35); border:2px solid rgba(165,180,252,.5);">
+        <span id="sc-p1" class="ff" style="color:#a5b4fc;">0</span>
+      </div>
+      <div class="ff" style="color:#a5b4fc; font-size:.85rem;">P1 Wins</div>
+    </div>
+    <div class="card card-p2" style="flex:1; padding:12px; text-align:center; border-radius:14px;">
+      <div class="sring" style="margin:0 auto 6px; background:rgba(16,185,129,.35); border:2px solid rgba(110,231,183,.5);">
+        <span id="sc-p2" class="ff" style="color:#6ee7b7;">0</span>
+      </div>
+      <div class="ff" style="color:#6ee7b7; font-size:.85rem;">P2 Wins</div>
+    </div>
+  </div>
+  <div class="card" style="width:calc(100% - 32px); max-width:320px; padding:12px; border-radius:14px;">
+    <div class="ff" style="font-size:.75rem; color:#64748b; text-transform:uppercase; letter-spacing:.08em; margin-bottom:8px;">Round History</div>
+    <div id="sc-hist" style="display:flex; flex-direction:column; gap:4px; max-height:160px; overflow-y:auto;"></div>
+    <div id="sc-hist-empty" style="color:#475569; font-size:.8rem; text-align:center; padding:8px 0;">No rounds yet</div>
+  </div>
+  <div style="width:calc(100% - 32px); max-width:320px; display:flex; flex-direction:column; gap:8px;">
+    <button class="btn btn-dim" onclick="hideScores()">← Back to Game</button>
+    <button class="btn btn-dim" onclick="confirmNewGame()" style="font-size:.9rem; padding:9px;">🔄 New Game (reset scores)</button>
+  </div>
+</div>
+
+<!-- ═══════════════════ ROUND WIN ═══════════════════ -->
+<div id="scr-win" class="scr" style="background:#0f0f1a; gap:14px;">
+  <div id="w-trophy" style="font-size:4.5rem; text-align:center;">🏆</div>
+  <div style="text-align:center; padding:0 24px;">
+    <h2 class="ff" id="w-title" style="font-size:2.4rem; color:#fff; margin-bottom:4px;">Player 1 Wins!</h2>
+    <p id="w-guesses" style="color:#94a3b8; font-size:.85rem; margin-bottom:2px;"></p>
+    <p id="w-secret"  style="color:#475569; font-size:.75rem;"></p>
+  </div>
+  <div style="display:flex; gap:12px; width:calc(100% - 32px); max-width:300px;">
+    <div class="card card-p1" style="flex:1; padding:10px; text-align:center; border-radius:14px;">
+      <div class="ff" id="w-s1" style="font-size:2rem; color:#a5b4fc;">0</div>
+      <div style="font-size:.72rem; color:#64748b;">P1 Wins</div>
+    </div>
+    <div class="card card-p2" style="flex:1; padding:10px; text-align:center; border-radius:14px;">
+      <div class="ff" id="w-s2" style="font-size:2rem; color:#6ee7b7;">0</div>
+      <div style="font-size:.72rem; color:#64748b;">P2 Wins</div>
+    </div>
+  </div>
+  <div style="width:calc(100% - 32px); max-width:300px; display:flex; flex-direction:column; gap:8px;">
+    <button class="btn btn-gold" onclick="nextRound()">⚔️ Next Round!</button>
+    <button class="btn btn-dim"  onclick="confirmNewGame()" style="font-size:.9rem; padding:9px;">🏠 New Game</button>
   </div>
 </div>
 
 <script>
-// ── State ──────────────────────────────────────────────────────────────────────
-const S={
-  secrets:[0,0], guesses:[0,0], guessLists:[[],[]], turn:0,
-  phase:'setup1',   // 'setup1' | 'setup2' | 'playing' — controls privacy screen routing
-  wins:[0,0], roundHistory:[],
-  si:'', gi:'',     // setup input, guess input
-};
-const P={
-  name:['Player 1','Player 2'], emoji:['🔵','🟢'],
-  bc:['b1','b2'], dc:['d1','d2'],
+// ─── State ────────────────────────────────────────────────────────────────────
+const G = {
+  secrets: [0, 0],
+  guesses: [0, 0],
+  lists:   [[], []],
+  turn: 0,
+  phase: 'setup1',   // 'setup1' | 'setup2' | 'playing'
+  wins: [0, 0],
+  history: [],
+  si: '',   // setup input
+  gi: '',   // guess input
 };
 
-// ── Screens ────────────────────────────────────────────────────────────────────
-const SCRS=['screen-welcome','screen-setup','screen-privacy','screen-game','screen-roundwin'];
-function show(id){
-  SCRS.forEach(s=>{const e=document.getElementById(s);e.classList.add('hidden');e.style.display='none';});
-  const t=document.getElementById(id);
-  t.classList.remove('hidden');
-  t.style.display='flex';
+const P = {
+  name:  ['Player 1', 'Player 2'],
+  emoji: ['🔵', '🟢'],
+  bc:    ['btn-p1', 'btn-p2'],
+  dc:    ['ndisp-p1', 'ndisp-p2'],
+  hlc:   ['hl-p1', 'hl-p2'],
+};
+
+// ─── Screen switcher ──────────────────────────────────────────────────────────
+const ALL_SCRS = ['scr-welcome','scr-setup','scr-priv','scr-game','scr-scores','scr-win'];
+function show(id) {
+  ALL_SCRS.forEach(s => { document.getElementById(s).style.display = 'none'; });
+  const el = document.getElementById(id);
+  el.style.display = 'flex';
 }
 
-// ── Numpad ─────────────────────────────────────────────────────────────────────
-function buildPad(cid,onD,onDel,onOk){
-  const c=document.getElementById(cid);c.innerHTML='';
-  [1,2,3,4,5,6,7,8,9,'⌫',0,'✓'].forEach(k=>{
-    const b=document.createElement('button');
-    b.className='nk btn'+(k===0?' zero':'');
-    b.textContent=k;
-    if(k==='⌫'){b.onclick=onDel;b.style.fontSize='.85rem';}
-    else if(k==='✓'){b.onclick=onOk;b.style.cssText='background:rgba(245,158,11,.22);border-color:rgba(245,158,11,.5);color:#fcd34d;font-size:.85rem';}
-    else{b.onclick=()=>onD(k);}
-    c.appendChild(b);
+// ─── Numpad builder ───────────────────────────────────────────────────────────
+function buildPad(padId, onDigit, onDel, onOk) {
+  const pad = document.getElementById(padId);
+  pad.innerHTML = '';
+  [1,2,3,4,5,6,7,8,9,'⌫',0,'✓'].forEach(k => {
+    const b = document.createElement('button');
+    b.className = 'nk';
+    b.textContent = k;
+    if (k === 0)   b.classList.add('nk-zero');
+    if (k === '✓') b.classList.add('nk-ok');
+    if (k === '⌫') b.classList.add('nk-del');
+    if (typeof k === 'number') b.onclick = () => onDigit(k);
+    else if (k === '⌫') b.onclick = onDel;
+    else b.onclick = onOk;
+    pad.appendChild(b);
   });
 }
 
-// ── Privacy helper ──────────────────────────────────────────────────────────────
-function showPrivacy(emoji,title,sub,btnTxt,btnCls,onTap){
-  document.getElementById('pv-emoji').textContent=emoji;
-  document.getElementById('pv-title').textContent=title;
-  document.getElementById('pv-sub').textContent=sub;
-  const b=document.getElementById('pv-btn');
-  b.className=`btn ${btnCls} rounded-2xl px-10 py-3 text-xl`;
-  b.textContent=btnTxt;
-  b.onclick=onTap;
-  show('screen-privacy');
+// ─── Privacy helper ───────────────────────────────────────────────────────────
+function showPrivacy(emoji, title, sub, btnTxt, btnCls, onTap) {
+  document.getElementById('pv-emoji').textContent = emoji;
+  document.getElementById('pv-title').textContent = title;
+  document.getElementById('pv-sub').textContent = sub;
+  const b = document.getElementById('pv-btn');
+  b.className = `btn ${btnCls}`;
+  b.textContent = btnTxt;
+  b.onclick = onTap;
+  show('scr-priv');
 }
 
-// ── Welcome ─────────────────────────────────────────────────────────────────────
-function startSetup(){
-  // full reset including wins? No — keep wins across rounds. Only reset round state.
-  S.secrets=[0,0];S.guesses=[0,0];S.guessLists=[[],[]];S.si='';S.gi='';
-  S.phase='setup1';
-  showSetupFor(0);
+// ─── Welcome → Setup ──────────────────────────────────────────────────────────
+function startGame() {
+  G.secrets = [0,0]; G.guesses = [0,0]; G.lists = [[],[]];
+  G.si = ''; G.gi = ''; G.phase = 'setup1';
+  showSetup(0);
 }
 
-function showSetupFor(p){
-  S.si='';
-  const sv=document.getElementById('se-val');sv.textContent='_';
-  document.getElementById('se-emoji').textContent=P.emoji[p];
-  document.getElementById('se-name').textContent=P.name[p];
-  document.getElementById('se-btn').className=`btn ${P.bc[p]} rounded-2xl w-full`;
-  document.getElementById('se-disp').className=`ndisp ${P.dc[p]} mb-3`;
-  document.getElementById('se-err').classList.add('hidden');
-  buildPad('se-pad',
-    k=>{if(S.si.length<3){S.si+=k;sv.textContent=S.si||'_';}},
-    ()=>{S.si=S.si.slice(0,-1);sv.textContent=S.si||'_';},
-    confirmSecret);
-  show('screen-setup');
+function showSetup(p) {
+  G.si = '';
+  document.getElementById('su-val').textContent = '_';
+  document.getElementById('su-emoji').textContent = P.emoji[p];
+  document.getElementById('su-name').textContent = P.name[p];
+  document.getElementById('su-disp').className = `ndisp ${P.dc[p]}`;
+  document.getElementById('su-btn').className = `btn ${P.bc[p]}`;
+  document.getElementById('su-err').style.display = 'none';
+
+  buildPad('su-pad',
+    d => { if (G.si.length < 3) { G.si += d; document.getElementById('su-val').textContent = G.si; } },
+    ()  => { G.si = G.si.slice(0,-1); document.getElementById('su-val').textContent = G.si || '_'; },
+    confirmSecret
+  );
+  show('scr-setup');
 }
 
-function confirmSecret(){
-  const v=parseInt(S.si),err=document.getElementById('se-err');
-  if(!S.si||isNaN(v)||v<1||v>100){
-    err.textContent='⚠️ Enter a number between 1 and 100!';err.classList.remove('hidden');
-    const d=document.getElementById('se-disp');d.classList.add('as');setTimeout(()=>d.classList.remove('as'),400);
+function confirmSecret() {
+  const v = parseInt(G.si);
+  if (!G.si || isNaN(v) || v < 1 || v > 100) {
+    const err = document.getElementById('su-err');
+    err.style.display = 'block';
+    const d = document.getElementById('su-disp');
+    d.classList.add('anim-shake');
+    setTimeout(() => d.classList.remove('anim-shake'), 400);
     return;
   }
-  err.classList.add('hidden');
-  if(S.phase==='setup1'){
-    S.secrets[0]=v;
-    S.phase='setup2';
-    showPrivacy('🟢','Pass to Player 2',"Hand the device — Player 2 sets their secret","I'm Ready! ✊",'b2',
-      ()=>showSetupFor(1));
+  document.getElementById('su-err').style.display = 'none';
+
+  if (G.phase === 'setup1') {
+    G.secrets[0] = v;
+    G.phase = 'setup2';
+    showPrivacy('🟢', 'Pass to Player 2', "Hand the device — Player 2 will now set their secret number", "I'm Ready! ✊", 'btn-p2',
+      () => showSetup(1));
   } else {
-    // phase === 'setup2'
-    S.secrets[1]=v;
-    S.phase='playing';
-    showPrivacy('⚔️','Both ready!','Player 1 goes first — press start when ready!','⚡ Start Guessing!','bgo',
-      ()=>{loadGameUI();show('screen-game');});
+    G.secrets[1] = v;
+    G.phase = 'playing';
+    showPrivacy('⚔️', 'Both Ready!', 'Player 1 goes first. Press start when ready!', '⚡ Start Guessing!', 'btn-gold',
+      () => { startRound(); show('scr-game'); });
   }
 }
 
-// ── Game ────────────────────────────────────────────────────────────────────────
-function loadGameUI(){
-  S.guesses=[0,0];S.guessLists=[[],[]];S.turn=0;
-  updateTurnUI();updateSidebar();updateHist();
-  document.getElementById('gfb').innerHTML='';
-  S.gi='';updateGDisp();
-  buildPad('gpad',
-    k=>{if(S.gi.length<3){S.gi+=k;updateGDisp();}},
-    ()=>{S.gi=S.gi.slice(0,-1);updateGDisp();},
-    submitGuess);
+// ─── Round start ──────────────────────────────────────────────────────────────
+function startRound() {
+  G.guesses = [0, 0]; G.lists = [[], []]; G.turn = 0;
+  G.gi = '';
+  buildPad('g-pad',
+    d => { if (G.gi.length < 3) { G.gi += d; refreshGuessDisp(); } },
+    ()  => { G.gi = G.gi.slice(0,-1); refreshGuessDisp(); },
+    submitGuess
+  );
+  refreshTurnUI();
+  refreshHist();
+  document.getElementById('g-fb').innerHTML = '';
+  refreshGuessDisp();
 }
 
-function updateTurnUI(){
-  const p=S.turn,opp=1-p;
-  const dot=document.getElementById('tdot');
-  dot.style.background=p===0?'#818cf8':'#34d399';
-  dot.style.boxShadow=`0 0 8px ${p===0?'rgba(99,102,241,.8)':'rgba(16,185,129,.8)'}`;
-  document.getElementById('tlbl').textContent=`${P.name[p]}'s Turn`;
-  document.getElementById('ge').textContent=P.emoji[p];
-  document.getElementById('gt').textContent=P.name[opp];
-  document.getElementById('gatt').textContent=S.guesses[p]+1;
-  document.getElementById('gdisp').className=`ndisp ${P.dc[p]}`;
-  document.getElementById('gbtn').className=`btn ${P.bc[p]} rounded-xl w-full`;
-  document.getElementById('gbtn').style.cssText='padding:9px;font-size:1.05rem;';
+function refreshTurnUI() {
+  const p = G.turn, opp = 1 - p;
+  const dot = document.getElementById('g-dot');
+  dot.style.background = p === 0 ? '#818cf8' : '#34d399';
+  dot.style.boxShadow  = `0 0 8px ${p===0?'rgba(99,102,241,.9)':'rgba(16,185,129,.9)'}`;
+  document.getElementById('g-lbl').textContent = `${P.name[p]}'s Turn`;
+  document.getElementById('g-emoji').textContent = P.emoji[p];
+  document.getElementById('g-target').textContent = P.name[opp];
+  document.getElementById('g-att').textContent = G.guesses[p] + 1;
+  document.getElementById('g-disp').className = `ndisp ${P.dc[p]}`;
+  document.getElementById('g-btn').className  = `btn ${P.bc[p]}`;
 }
 
-function updateGDisp(){
-  document.getElementById('gval').textContent=S.gi||'_';
-  const d=document.getElementById('gdisp');
-  d.classList.remove('ap');void d.offsetWidth;
-  if(S.gi)d.classList.add('ap');
+function refreshGuessDisp() {
+  const v = document.getElementById('g-val');
+  v.textContent = G.gi || '_';
+  const d = document.getElementById('g-disp');
+  d.classList.remove('anim-pop'); void d.offsetWidth;
+  if (G.gi) d.classList.add('anim-pop');
 }
 
-function submitGuess(){
-  const v=parseInt(S.gi);
-  if(!S.gi||isNaN(v)||v<1||v>100){
-    const d=document.getElementById('gdisp');d.classList.add('as');setTimeout(()=>d.classList.remove('as'),400);
-    showFB('⚠️ Enter 1–100','fhi');return;
+// ─── Guessing ─────────────────────────────────────────────────────────────────
+function submitGuess() {
+  const v = parseInt(G.gi);
+  if (!G.gi || isNaN(v) || v < 1 || v > 100) {
+    const d = document.getElementById('g-disp');
+    d.classList.add('anim-shake'); setTimeout(() => d.classList.remove('anim-shake'), 400);
+    setFeedback('⚠️ Enter 1–100', 'fbd-hi'); return;
   }
-  const p=S.turn,opp=1-p;
-  S.guesses[p]++;S.guessLists[p].push(v);
-  S.gi='';updateGDisp();updateSidebar();updateHist();
-  const sec=S.secrets[opp];
-  if(v===sec){showFB(`🎉 BINGO! It was ${sec}!`,'fok');setTimeout(()=>showRoundWin(p),900);}
-  else if(v>sec){showFB('📉 Too High!','fhi');doSwitchTurn();}
-  else{showFB('📈 Too Low!','flo');doSwitchTurn();}
+  const p = G.turn, opp = 1 - p;
+  G.guesses[p]++; G.lists[p].push(v);
+  G.gi = ''; refreshGuessDisp(); refreshHist();
+
+  const sec = G.secrets[opp];
+  if      (v === sec) { setFeedback(`🎉 BINGO! It was ${sec}!`, 'fbd-win'); setTimeout(() => roundWin(p), 900); }
+  else if (v > sec)   { setFeedback('📉 Too High! Go lower.', 'fbd-hi');    doPassTurn(); }
+  else                { setFeedback('📈 Too Low! Go higher.', 'fbd-lo');     doPassTurn(); }
 }
 
-function showFB(msg,cls){
-  const fb=document.getElementById('gfb');
-  fb.innerHTML=`<span class="fbadge ${cls}">${msg}</span>`;
-  fb.firstChild.classList.add('ap');
+function setFeedback(msg, cls) {
+  const fb = document.getElementById('g-fb');
+  fb.innerHTML = `<span class="fbd ${cls}">${msg}</span>`;
+  fb.firstChild.classList.add('anim-pop');
 }
 
-function doSwitchTurn(){
-  const np=1-S.turn;
-  showPrivacy(P.emoji[np],`${P.name[np]}'s Turn!`,`Pass to ${P.name[np]} for their guess.`,"I'm Ready! 🎯",P.bc[np],
-    ()=>{
-      S.turn=np;
-      document.getElementById('gfb').innerHTML='';
-      updateTurnUI();updateHist();
-      show('screen-game');
+function doPassTurn() {
+  const np = 1 - G.turn;
+  showPrivacy(P.emoji[np], `${P.name[np]}'s Turn!`, `Pass the device to ${P.name[np]}`, "I'm Ready! 🎯", P.bc[np],
+    () => {
+      G.turn = np;
+      document.getElementById('g-fb').innerHTML = '';
+      refreshTurnUI(); refreshHist(); refreshGuessDisp();
+      show('scr-game');
     });
 }
 
-// ── Round win ───────────────────────────────────────────────────────────────────
-function showRoundWin(winner){
-  S.wins[winner]++;
-  const opp=1-winner,wg=S.guesses[winner],lg=S.guesses[opp];
-  S.roundHistory.unshift({winner,wg,lg,secrets:[...S.secrets],round:S.roundHistory.length+1});
-  document.getElementById('rw-trophy').textContent=winner===0?'🏆🔵':'🏆🟢';
-  document.getElementById('rw-title').textContent=`${P.name[winner]} Wins!`;
-  document.getElementById('rw-guesses').textContent=`${P.name[winner]}: ${wg} guess${wg!==1?'es':''} · ${P.name[opp]}: ${lg} guess${lg!==1?'es':''}`;
-  document.getElementById('rw-secret').textContent=`Secrets — P1: ${S.secrets[0]}, P2: ${S.secrets[1]}`;
-  document.getElementById('rws1').textContent=S.wins[0];
-  document.getElementById('rws2').textContent=S.wins[1];
-  show('screen-roundwin');
-  document.getElementById('rw-trophy').classList.add('ac');
-}
-
-// ── "Next Round" — same players, new secrets, keep wins ───────────────────────
-function nextRound(){
-  startSetup();   // resets secrets/guesses/phase, keeps S.wins & S.roundHistory
-}
-
-function confirmNewGame(){
-  if(confirm('Start a completely new game? All scores will reset.')){
-    S.wins=[0,0];S.roundHistory=[];
-    show('screen-welcome');
-  }
-}
-
-// ── Sidebar ─────────────────────────────────────────────────────────────────────
-function updateSidebar(){
-  document.getElementById('sc1').textContent=S.wins[0];
-  document.getElementById('sc2').textContent=S.wins[1];
-  document.getElementById('sg1').textContent=`${S.guesses[0]} guess${S.guesses[0]!==1?'es':''}`;
-  document.getElementById('sg2').textContent=`${S.guesses[1]} guess${S.guesses[1]!==1?'es':''}`;
-  const hl=document.getElementById('hl'),he=document.getElementById('he');
-  if(!S.roundHistory.length){he.style.display='block';hl.innerHTML='';return;}
-  he.style.display='none';
-  hl.innerHTML=S.roundHistory.slice(0,15).map(r=>
-    `<div class="hi"><span style="font-weight:700;${r.winner===0?'color:#a5b4fc':'color:#6ee7b7'}">${P.emoji[r.winner]} R${r.round}</span><span style="color:#94a3b8">${r.wg} vs ${r.lg}</span></div>`
-  ).join('');
-}
-
-// ── Guess chips ──────────────────────────────────────────────────────────────────
-function updateHist(){
-  [0,1].forEach(p=>{
-    const list=S.guessLists[p],sec=S.secrets[1-p];
-    const el=document.getElementById(`hp${p+1}`);
-    if(!list.length){el.innerHTML='<span style="color:#475569;font-size:.72rem;">—</span>';return;}
-    el.innerHTML=list.map(g=>{
-      const hi=g>sec,lo=g<sec;
-      return `<div class="chip ${hi?'chi':lo?'clo':'cok'}"><span class="cn">${g}</span><span class="cl">${hi?'HIGH':lo?'LOW':'YES!'}</span></div>`;
+// ─── Guess history chips ──────────────────────────────────────────────────────
+function refreshHist() {
+  [0, 1].forEach(p => {
+    const strip = document.getElementById(`h-p${p+1}`);
+    const list = G.lists[p], sec = G.secrets[1-p];
+    if (!list.length) { strip.innerHTML = '<span style="color:#475569;font-size:.72rem;">—</span>'; return; }
+    strip.innerHTML = list.map(g => {
+      const hi = g > sec, lo = g < sec;
+      const cls = hi ? 'chip-hi' : lo ? 'chip-lo' : 'chip-ok';
+      const lbl = hi ? 'HIGH' : lo ? 'LOW' : 'YES!';
+      return `<div class="chip ${cls}"><span class="chip-num">${g}</span><span class="chip-lbl">${lbl}</span></div>`;
     }).join('');
-    el.scrollLeft=9999;
+    strip.scrollLeft = 9999;
   });
 }
 
-function openSb(){document.getElementById('sidebar').classList.add('open');document.getElementById('sbbk').classList.remove('hidden');}
-function closeSb(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sbbk').classList.add('hidden');}
+// ─── Round win ────────────────────────────────────────────────────────────────
+function roundWin(winner) {
+  G.wins[winner]++;
+  const opp = 1 - winner;
+  const wg = G.guesses[winner], lg = G.guesses[opp];
+  G.history.unshift({ winner, wg, lg, secrets: [...G.secrets], round: G.history.length + 1 });
 
-// ── Init ─────────────────────────────────────────────────────────────────────────
-buildPad('se-pad',k=>{if(S.si.length<3){S.si+=k;document.getElementById('se-val').textContent=S.si||'_';}},
-  ()=>{S.si=S.si.slice(0,-1);document.getElementById('se-val').textContent=S.si||'_';},confirmSecret);
-buildPad('gpad',k=>{if(S.gi.length<3){S.gi+=k;updateGDisp();}},
-  ()=>{S.gi=S.gi.slice(0,-1);updateGDisp();},submitGuess);
-show('screen-welcome');
+  document.getElementById('w-trophy').textContent = winner === 0 ? '🏆🔵' : '🏆🟢';
+  document.getElementById('w-title').textContent   = `${P.name[winner]} Wins!`;
+  document.getElementById('w-guesses').textContent = `${P.name[winner]}: ${wg} guess${wg!==1?'es':''} · ${P.name[opp]}: ${lg} guess${lg!==1?'es':''}`;
+  document.getElementById('w-secret').textContent  = `Secrets — P1: ${G.secrets[0]}, P2: ${G.secrets[1]}`;
+  document.getElementById('w-s1').textContent = G.wins[0];
+  document.getElementById('w-s2').textContent = G.wins[1];
+
+  show('scr-win');
+  const t = document.getElementById('w-trophy');
+  t.classList.remove('anim-celeb'); void t.offsetWidth; t.classList.add('anim-celeb');
+}
+
+function nextRound() {
+  // keep wins, keep history — just do a fresh setup
+  G.secrets = [0,0]; G.guesses = [0,0]; G.lists = [[],[]];
+  G.si = ''; G.gi = ''; G.phase = 'setup1';
+  showSetup(0);
+}
+
+function confirmNewGame() {
+  if (confirm('Reset all scores and start over?')) {
+    G.wins = [0,0]; G.history = [];
+    show('scr-welcome');
+  }
+}
+
+// ─── Scores overlay ───────────────────────────────────────────────────────────
+function showScores() {
+  document.getElementById('sc-p1').textContent = G.wins[0];
+  document.getElementById('sc-p2').textContent = G.wins[1];
+  const hist = document.getElementById('sc-hist');
+  const empty = document.getElementById('sc-hist-empty');
+  if (!G.history.length) { empty.style.display = 'block'; hist.innerHTML = ''; }
+  else {
+    empty.style.display = 'none';
+    hist.innerHTML = G.history.slice(0,15).map(r => `
+      <div style="display:flex;justify-content:space-between;align-items:center;
+        padding:5px 9px;border-radius:8px;background:rgba(255,255,255,.06);
+        border:1px solid rgba(255,255,255,.1);">
+        <span class="ff" style="font-size:.82rem;color:${r.winner===0?'#a5b4fc':'#6ee7b7'}">
+          ${P.emoji[r.winner]} Round ${r.round}
+        </span>
+        <span style="font-size:.75rem;color:#64748b">${r.wg} vs ${r.lg} guesses</span>
+      </div>`).join('');
+  }
+  show('scr-scores');
+}
+function hideScores() { show('scr-game'); }
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+// Build setup pad at load so it exists; it'll be rebuilt on each showSetup() call
+buildPad('su-pad',
+  d => { if (G.si.length < 3) { G.si += d; document.getElementById('su-val').textContent = G.si; } },
+  ()  => { G.si = G.si.slice(0,-1); document.getElementById('su-val').textContent = G.si || '_'; },
+  confirmSecret
+);
+buildPad('g-pad',
+  d => { if (G.gi.length < 3) { G.gi += d; refreshGuessDisp(); } },
+  ()  => { G.gi = G.gi.slice(0,-1); refreshGuessDisp(); },
+  submitGuess
+);
+
+show('scr-welcome');
 </script>
 </body>
-      </html>
+          </html> 
